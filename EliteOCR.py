@@ -1066,6 +1066,7 @@ class EliteOCR(QMainWindow, Ui_MainWindow):
         """Draw single result item to graphicsview"""
         res = self.current_result
         snippet = self.cutImage(res.contrast_commodities_img, item)
+        #print "eliteocr.py 1070: my Snippet Itemname ", item.value, "file ", res.contrast_commodities_img.shape,  "Shape y1 ", item.y1, " y2 ", item.y2, " x1 ", item.x1, " x2 ", item.x2
         if self.dark_theme: 
             snippet = 255 - snippet
         #cv2.imwrite('snippets/'+unicode(self.currentsnippet)+'.png',snippet)

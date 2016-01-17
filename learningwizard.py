@@ -87,7 +87,7 @@ class LearningWizard(QWizard, Ui_Wizard):
     def showSummary(self):
         summary = ""
         userdata = {}
-        characters = ["'", ',', '-', '&', '[', ']', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+        characters = ["'", ',', '-', '&', '[', ']', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '*', '+', '#']
         for word in self.words:
             for letter in word:
                 if letter[1] in characters:
@@ -107,19 +107,23 @@ class LearningWizard(QWizard, Ui_Wizard):
         testnumbers = self.getRandomData(alldata,[',', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
         testletters = self.getRandomData(alldata,["'", ',', '-', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'])
         teststation = self.getRandomData(alldata,["'", ',', '-', '&', '[', ']', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'])
+        testlevel   = self.getRandomData(alldata,['*', '+', '#'])
         self.movie = QMovie(":/ico/loader.gif")
         self.loader.setMovie(self.movie)
         self.movie.start()
-        self.numberstrainerthread = Trainer(self, "numbers", self.base, self.user, testnumbers, testletters, teststation)
-        self.letterstrainerthread = Trainer(self, "letters", self.base, self.user, testnumbers, testletters, teststation)
-        self.stationtrainerthread = Trainer(self, "station", self.base, self.user, testnumbers, testletters, teststation)
+        self.numberstrainerthread = Trainer(self, "numbers", self.base, self.user, testnumbers, testletters, teststation, testlevel)
+        self.letterstrainerthread = Trainer(self, "letters", self.base, self.user, testnumbers, testletters, teststation, testlevel)
+        self.stationtrainerthread = Trainer(self, "station", self.base, self.user, testnumbers, testletters, teststation, testlevel)
+        self.leveltrainerthread   = Trainer(self, "level"  , self.base, self.user, testnumbers, testletters, teststation, testlevel)
         QObject.connect(self.numberstrainerthread, SIGNAL('finished(QString, int)'), self.stepFinished)
         QObject.connect(self.letterstrainerthread, SIGNAL('finished(QString, int)'), self.stepFinished)
         QObject.connect(self.stationtrainerthread, SIGNAL('finished(QString, int)'), self.stepFinished)
+        QObject.connect(self.leveltrainerthread  , SIGNAL('finished(QString, int)'), self.stepFinished)
         #QObject.connect(self.trainerthread, SIGNAL('finishedall(int)'), self.trainingFinished)
         self.numberstrainerthread.execute()
         self.letterstrainerthread.execute()
         self.stationtrainerthread.execute()
+        self.leveltrainerthread.execute()
         self.training_summary.setText("Training in progress")
 
     def trainingFinished(self):
@@ -143,7 +147,7 @@ class LearningWizard(QWizard, Ui_Wizard):
     
     def connectData(self):
         connected = {}
-        characters = ["'", ',', '-', '&', '[', ']', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+        characters = ["'", ',', '-', '&', '[', ']', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '*', '+', '#']
         
         if self.user is None:
             self.user = {}
@@ -180,7 +184,7 @@ class LearningWizard(QWizard, Ui_Wizard):
         return self.testsamples
     
     def saveImgData(self):
-        characters = ["'", ',', '-', '&', '[', ']', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+        characters = ["'", ',', '-', '&', '[', ']', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '*', '+', '#']
         
         if self.user is None:
             self.user = {}
