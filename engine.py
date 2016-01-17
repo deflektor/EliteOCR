@@ -141,8 +141,8 @@ class OCRAreasFinder:
                  [0.448, 0.533],
                  [0.625, 0.767],
                  [0.773, 0.794],        #### Demand Level (should result in pixel for level, add 80 pixel here for cut off)
-                 [0.800, 0.9635],
-                 [0.968, 0.999]]        #### Supply Level
+                 [0.800, 0.9637],       
+                 [0.970, 0.999]]        #### Supply Level
 
         new_areas = []
         x = x2 - x1
