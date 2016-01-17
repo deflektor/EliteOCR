@@ -231,3 +231,4 @@ EliteOCR.spec
 
 # file generated during build
 EliteOCRcmd.py
+errorlog.txt

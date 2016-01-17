@@ -139,10 +139,10 @@ class OCRAreasFinder:
         areas = [[0.0, 0.357],
                  [0.361, 0.447],
                  [0.448, 0.533],
-                 [0.625, 0.731],
-                 [0.732, 0.802],
-                 [0.805, 0.909],
-                 [0.911, 0.999]]
+                 [0.625, 0.767],
+                 [0.773, 0.794],        #### Demand Level (should result in pixel for level, add 80 pixel here for cut off)
+                 [0.800, 0.9635],
+                 [0.968, 0.999]]        #### Supply Level
 
         new_areas = []
         x = x2 - x1
@@ -168,6 +168,7 @@ class MLP:
         else:
             self.numbers = TrainedDataNumbers(settings)
             self.letters = TrainedDataLetters(settings)
+            self.level   = TrainedDataLevel(settings)
         """
         layers = np.array([400,36,12])
         self.nnetwork = cv2.ANN_MLP(layers, 1,0.6,1)
@@ -308,7 +309,11 @@ class MLP:
                     startchar = line[3]+2
                     endchar = 0
                 
-                if firstflag and not blackflag and whitecount > (line[3] - line[2])/2.6:
+                if (
+				       (firstflag and not blackflag and whitecount > (line[3] - line[2])/2.6)
+					or (last+7 >= self.areas[4][0] and last+7 < self.areas[4][0]+7)
+					or (last+7 >= self.areas[6][0] and last+7 < self.areas[6][0]+7)
+				   ):
                     #h = line[3] - line[2]
                     last = i - whitecount + 1
                     whitecount = 0
@@ -411,6 +416,10 @@ class MLP:
                 resultclasses = -1 * np.ones((len(data),self.station.keys), dtype='float32')
                 self.station.nnetwork.predict(data, resultclasses)
                 classdict = self.station.classdict
+            elif type == "level":
+                resultclasses = -1 * np.ones((len(data),self.level.keys), dtype='float32')
+                self.level.nnetwork.predict(data, resultclasses)
+                classdict = self.level.classdict
             
             
             for k in range(len(resultclasses)):
@@ -447,9 +456,9 @@ class MLP:
                             if word["box"][1] < self.areas[0][1]:
                                 result = self.mlpocr(input, word, "letters")
                             elif word["box"][0] > self.areas[4][0] and word["box"][1] < self.areas[4][1]:
-                                result = self.mlpocr(input, word, "letters")
+                                result = self.mlpocr(input, word, "level")
                             elif word["box"][0] > self.areas[6][0] and word["box"][1] < self.areas[6][1]:
-                                result = self.mlpocr(input, word, "letters")    
+                                result = self.mlpocr(input, word, "level")    
                             else:
                                 result = self.mlpocr(input, word, "numbers")
                                 
@@ -468,7 +477,8 @@ class Levenshtein:
         
         self.levels = {u"eng": [u'LOW', u'MED', u'HIGH'],
                        u"deu": [u'NIEDRIG', u'MITTEL', u'HOCH'], 
-                       u"fra": [u'FAIBLE', u'MOYEN', u'ÉLEVÉ']}
+                       u"fra": [u'FAIBLE', u'MOYEN', u'ÉLEVÉ'],
+                       u"lev": [u'#', u'*', u'+']}
         file = codecs.open(path + ""+ os.sep +"commodities.json", 'r', "utf-8")
         self.comm_list = json.loads(file.read())
         file.close()
@@ -525,26 +535,38 @@ class Levenshtein:
             if not data[i][4] is None and levels:
                 try:
                     topratio = 0.0
-                    toplev = ""
-                    for lev in self.levels[self.lang]:
+                    toplev = "MED"
+                    for lev in self.levels[u"lev"]:
                         if data[i][4].value is None:
                             print "None!"
                         rat = ratio(unicode(data[i][4].value), unicode(lev))
                         if rat > topratio:
                             topratio = rat
                             toplev = lev
+                        if   toplev == u'*':
+                             toplev =  "MED"
+                        elif toplev == u'+':
+                             toplev =  "HIGH"
+                        elif toplev == u'#':
+                             toplev =  "LOW"
                     data[i][4].value = toplev
                 except:
                     pass
             if not data[i][6] is None and levels:
                 try:
                     topratio = 0.0
-                    toplev = ""
-                    for lev in self.levels[self.lang]:
+                    toplev = "MED"
+                    for lev in self.levels[u"lev"]:
                         rat = ratio(data[i][6].value, unicode(lev))
                         if rat > topratio:
                             topratio = rat
                             toplev = lev
+                        if   toplev == u'*':
+                             toplev =  "MED"
+                        elif toplev == u'+':
+                             toplev =  "HIGH"
+                        elif toplev == u'#':
+                             toplev =  "LOW"
                     data[i][6].value = toplev
                 except:
                     pass
@@ -728,6 +750,20 @@ class TrainedDataLetters():
             self.nnetwork.load(datapath, "OCRMLP")
         else:
             datapath = (settings.app_path + os.sep + "letters.xml").encode(sys.getfilesystemencoding())
+            self.nnetwork.load(datapath, "OCRMLP")
+        self.classdict = dict((v,k.decode("utf-8")) for k,v in self.revclassdict.iteritems())
+
+class TrainedDataLevel():
+    def __init__(self, settings):
+        self.revclassdict = {"*":0,"+":1,"#":2}
+        self.keys = len(self.revclassdict)
+        layers = np.array([400,71,self.keys])
+        self.nnetwork = cv2.ANN_MLP(layers, 1,0.65,1)
+        datapath = (settings.storage_path + os.sep + "user_level.xml").encode(sys.getfilesystemencoding())
+        if isfile(datapath):
+            self.nnetwork.load(datapath, "OCRMLP")
+        else:
+            datapath = (settings.app_path + os.sep + "level.xml").encode(sys.getfilesystemencoding())
             self.nnetwork.load(datapath, "OCRMLP")
         self.classdict = dict((v,k.decode("utf-8")) for k,v in self.revclassdict.iteritems())
         

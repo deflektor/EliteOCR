@@ -8,7 +8,7 @@ from PyQt4.QtCore import QSettings, QThread, SIGNAL
 from settings import Settings
 
 class Trainer(QThread):
-    def __init__(self, parent, type, base, user, tnumbers, tletters, tstation):
+    def __init__(self, parent, type, base, user, tnumbers, tletters, tstation, tlevel):
         QThread.__init__(self, parent)
         self.type = type
         self.base = base
@@ -16,6 +16,7 @@ class Trainer(QThread):
         self.testnumbers = tnumbers
         self.testletters = tletters
         self.teststation = tstation
+        self.testlevel   = tlevel
         self.errors = 0
         self.message = type.title()+" training:\n"
     
@@ -34,7 +35,10 @@ class Trainer(QThread):
             
         if self.type == "station":
             self.trainStation()
-            
+        
+        if self.type == 'level':
+            self.trainLevel();		
+			
         self.message += self.type.title() + " training took " + str(int(time()-self.time1))+"s to perform."
         self.emit(SIGNAL("finished(QString, int)"), self.message, self.errors)
         
@@ -73,7 +77,19 @@ class Trainer(QThread):
                 predictions = np.empty_like(resultcheck[1])
                 nnetwork.predict(resultcheck[0], predictions)
                 self.processResults(classdict, resultcheck[1], predictions)
-    
+
+    def trainLevel(self):
+        classdict = {"*":0,"+":1,"#":2}
+        nnetwork = self.trainProcess(classdict)
+        if not nnetwork is None:
+            nnetwork.save((self.settings.storage_path + os.sep + "user_level.xml").encode(sys.getfilesystemencoding()), "OCRMLP")
+            
+            resultcheck = self.testProcess(classdict, self.teststation)
+            if not resultcheck is None:
+                predictions = np.empty_like(resultcheck[1])
+                nnetwork.predict(resultcheck[0], predictions)
+                self.processResults(classdict, resultcheck[1], predictions)
+				
     def processResults(self, classdict, testclasses, predictions):
         KEYS = len(classdict)
         revclassdict = dict((v,k.decode("utf-8")) for k,v in classdict.iteritems())

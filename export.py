@@ -164,10 +164,13 @@ class Export:
             #    QMessageBox.warning(self.parent,"System and station names identical", "There are rows where system and station names are identical. Export aborted.")
             #    return
             timescreenshot = datetime.strptime(row[9],"%Y-%m-%dT%H:%M:%S+00:00")
-            if allowedtime > timescreenshot:
-                QMessageBox.warning(self.parent,"Too old for BPC", "You have been using at least one screenshot which is too old. BPC format only allows screenshots younger than 2 hours. Export aborted.")
-                return
-            
+			
+
+            #if allowedtime > timescreenshot:
+            #    QMessageBox.warning(self.parent,"Too old for BPC", "You have been using at least one screenshot which is too old. BPC format only allows screenshots younger than 2 hours. Export aborted.")
+            #    return
+
+			
             bpc_format.append([unicode(id)]+row)
             
         self.exportToCsv(bpc_format, file)
